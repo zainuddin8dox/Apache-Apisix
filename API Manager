@@ -1,0 +1,104 @@
+# Create Route
+
+curl "http://127.0.0.1:9080/apisix/admin/upstreams/1" -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+  "methods": ["GET"],
+  "host": "example.com",
+  "uri": "/services/users/*",
+  "upstream": {
+    "type": "roundrobin",
+    "nodes": {
+      "httpbin.org:80": 1
+    }
+  }
+}'
+
+# Create Upstream 
+
+curl "http://127.0.0.1:9080/apisix/admin/upstreams/1" -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+  "type": "roundrobin",
+  "nodes": {
+    "httpbin.org:80": 1
+  }
+}'
+
+# Create api-key
+
+curl "http://127.0.0.1:9080/apisix/admin/consumers" -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+  "username": "john",
+  "plugins": {
+    "key-auth": {
+      "key": "key-of-john"
+    }
+  }
+}''
+
+# Bind api-key
+
+curl "http://127.0.0.1:9080/apisix/admin/routes/1" -H "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1" -X PUT -d '
+{
+  "uri": "/get",
+  "host": "httpbin.org",
+  "plugins": {
+    "key-auth": {}
+  },
+  "upstream_id": "1"
+}'
+
+# Create rate-limit
+
+curl http://192.167.7.8:9080/apisix/admin/routes/13 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
+{
+    "methods": ["GET"],
+    "uri": "/",
+    "plugins": {
+        "limit-req": {
+            "rate": 1,
+            "burst": 2,
+            "rejected_code": 503,
+            "key": "remote_addr"
+        }
+        "nodes": {
+            "192.168.7.8:32778": 1
+        }
+    }
+}'
+
+=> Create rate-limit on consumer
+curl http://192.168.7.8:9080/apisix/admin/consumers -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
+{
+    "username": "consumer_zainuddin",
+    "plugins": {
+        "key-auth": {
+            "key": "auth-of-rate-limit"
+        },
+        "limit-req": {
+            "rate": 1,
+            "burst": 1,
+            "rejected_code": 503,
+            "key": "consumer_name"
+        }
+    }
+}'
+
+"key-auth": {}
+
+=> create route and enable auth-key
+curl http://192.168.7.8:9080/apisix/admin/routes/2 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
+{
+    "methods": ["GET"],
+    "uri": "/",
+    "plugins": {
+        "key-auth": {
+            "key": "auth-of-rate-limit"
+        }
+    },
+    "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+            "192.168.7.8:32778	": 1
+        }
+    }
+}'
